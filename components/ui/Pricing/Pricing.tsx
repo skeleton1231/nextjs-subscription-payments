@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import LogoCloud from '@/components/ui/LogoCloud';
 import type { Tables } from '@/types_db';
@@ -9,7 +10,7 @@ import { getErrorRedirect } from '@/utils/helpers';
 import { User } from '@supabase/supabase-js';
 import cn from 'classnames';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import Skeleton from '@/components/ui/Skeleton/Skeleton';
 
 type Subscription = Tables<'subscriptions'>;
 type Product = Tables<'products'>;
@@ -33,6 +34,7 @@ interface Props {
 type BillingInterval = 'lifetime' | 'year' | 'month';
 
 export default function Pricing({ user, products, subscriptions }: Props) {
+  const [loading, setLoading] = useState(true);
   const intervals = Array.from(
     new Set(
       products.flatMap((product) =>
@@ -41,10 +43,13 @@ export default function Pricing({ user, products, subscriptions }: Props) {
     )
   );
   const router = useRouter();
-  const [billingInterval, setBillingInterval] =
-    useState<BillingInterval>('month');
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('month');
   const [priceIdLoading, setPriceIdLoading] = useState<string>();
   const currentPath = usePathname();
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 2000); // 模拟数据加载，2秒后设置为已加载
+  }, []);
 
   const handleStripeCheckout = async (price: Price) => {
     setPriceIdLoading(price.id);
@@ -59,10 +64,7 @@ export default function Pricing({ user, products, subscriptions }: Props) {
       return router.push('/account'); // 假设这是用户的订阅管理页面
     }
 
-    const { errorRedirect, sessionId } = await checkoutWithStripe(
-      price,
-      currentPath
-    );
+    const { errorRedirect, sessionId } = await checkoutWithStripe(price, currentPath);
 
     if (errorRedirect) {
       setPriceIdLoading(undefined);
@@ -158,58 +160,66 @@ export default function Pricing({ user, products, subscriptions }: Props) {
             </div>
           </div>
           <div className="mt-12 space-y-0 sm:mt-16 flex flex-wrap justify-center gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-none xl:mx-0">
-            {products.map((product) => {
-              const price = product?.prices?.find(
-                (price) => price.interval === billingInterval
-              );
-              if (!price) return null;
-              const priceString = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: price.currency!,
-                minimumFractionDigits: 0
-              }).format((price?.unit_amount || 0) / 100);
+            {loading ? (
+              <>
+                <Skeleton className="h-40 w-80 rounded-md" />
+                <Skeleton className="h-40 w-80 rounded-md" />
+                <Skeleton className="h-40 w-80 rounded-md" />
+              </>
+            ) : (
+              products.map((product) => {
+                const price = product?.prices?.find(
+                  (price) => price.interval === billingInterval
+                );
+                if (!price) return null;
+                const priceString = new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: price.currency!,
+                  minimumFractionDigits: 0
+                }).format((price?.unit_amount || 0) / 100);
 
-              const isSubscribed = isSubscribedToCurrentInterval(product);
+                const isSubscribed = isSubscribedToCurrentInterval(product);
 
-              return (
-                <div
-                  key={product.id}
-                  className={cn(
-                    'flex flex-col rounded-lg shadow-sm divide-y divide-zinc-600 bg-zinc-900',
-                    {
-                      'border border-pink-500': isSubscribed
-                    },
-                    'flex-1', // This makes the flex item grow to fill the space
-                    'basis-1/3', // Assuming you want each card to take up roughly a third of the container's width
-                    'max-w-xs' // Sets a maximum width to the cards to prevent them from getting too large
-                  )}
-                >
-                  <div className="p-6">
-                    <h2 className="text-2xl font-semibold leading-6 text-white">
-                      {product.name}
-                    </h2>
-                    <p className="mt-4 text-zinc-300">{product.description}</p>
-                    <p className="mt-8">
-                      <span className="text-5xl font-extrabold white">
-                        {priceString}
-                      </span>
-                      <span className="text-base font-medium text-zinc-100">
-                        /{billingInterval}
-                      </span>
-                    </p>
-                    <Button
-                      variant="slim"
-                      type="button"
-                      loading={priceIdLoading === price.id}
-                      onClick={() => handleStripeCheckout(price)}
-                      className="block w-full py-2 mt-8 text-sm font-semibold text-center text-white rounded-md hover:bg-zinc-900"
-                    >
-                      {isSubscribed ? 'Manage' : 'Subscribe'}
-                    </Button>
+                return (
+                  <div
+                    key={product.id}
+                    className={cn(
+                      'flex flex-col rounded-lg shadow-sm divide-y divide-zinc-600 bg-zinc-900',
+                      {
+                        'border border-pink-500': isSubscribed
+                      },
+                      'flex-1', // This makes the flex item grow to fill the space
+                      'basis-1/3', // Assuming you want each card to take up roughly a third of the container's width
+                      'max-w-xs' // Sets a maximum width to the cards to prevent them from getting too large
+                    )}
+                  >
+                    <div className="p-6">
+                      <h2 className="text-2xl font-semibold leading-6 text-white">
+                        {product.name}
+                      </h2>
+                      <p className="mt-4 text-zinc-300">{product.description}</p>
+                      <p className="mt-8">
+                        <span className="text-5xl font-extrabold white">
+                          {priceString}
+                        </span>
+                        <span className="text-base font-medium text-zinc-100">
+                          /{billingInterval}
+                        </span>
+                      </p>
+                      <Button
+                        variant="slim"
+                        type="button"
+                        loading={priceIdLoading === price.id}
+                        onClick={() => handleStripeCheckout(price)}
+                        className="block w-full py-2 mt-8 text-sm font-semibold text-center text-white rounded-md hover:bg-zinc-900"
+                      >
+                        {isSubscribed ? 'Manage' : 'Subscribe'}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
           <LogoCloud />
         </div>

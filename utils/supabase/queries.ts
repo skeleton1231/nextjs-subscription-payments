@@ -19,7 +19,7 @@ export const getSubscription = cache(async (supabase: SupabaseClient) => {
     console.error('Error fetching subscription:', error);
   }
 
-  console.log('Fetched subscription:', subscription);
+  // console.log('Fetched subscription:', subscription);
   
   return subscription;
 });
@@ -61,6 +61,6 @@ export const getUserSubscriptions = cache(async (supabase: SupabaseClient, user:
     return [];
   }
 
-  console.log('Fetched subscriptions:', subscriptions);
+  // console.log('Fetched subscriptions:', subscriptions);
   return subscriptions;
 });

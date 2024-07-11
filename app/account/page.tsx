@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import {
   getUserDetails,
-  getSubscription,
   getUser,
   getUserSubscriptions
 } from '@/utils/supabase/queries';

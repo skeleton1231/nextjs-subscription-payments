@@ -1,3 +1,4 @@
+// pages/pricing.tsx
 import Pricing from '@/components/ui/Pricing/Pricing';
 import { createClient } from '@/utils/supabase/server';
 import {
@@ -11,18 +12,17 @@ export default async function PricingPage() {
   const user = await getUser(supabase);
 
   const [products, subscriptions] = await Promise.all([
-    // getUser(supabase),
     getProducts(supabase),
     getUserSubscriptions(supabase, user),
   ]);
 
-
-console.log(subscriptions);
-
   return (
-    <Pricing
-      user={user}
-      products={products ?? []}
-      subscriptions={subscriptions}  />
+    <>
+      <Pricing
+        user={user}
+        products={products ?? []}
+        subscriptions={subscriptions}
+      />
+    </>
   );
 }
